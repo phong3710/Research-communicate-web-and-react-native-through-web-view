@@ -1,117 +1,103 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useRef, useState} from 'react';
 import {
+  Button,
+  Dimensions,
   SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
+  TextInput,
   View,
 } from 'react-native';
+import {WebView, WebViewMessageEvent} from 'react-native-webview';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
+const DIMENSION = {
+  width: Dimensions.get('screen').width,
+  height: Dimensions.get('screen').height / 2,
+};
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const webViewRef = useRef<WebView>(null);
+  const [textString, setTextString] = useState('');
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  /**
+   *  Handle receive post message in native
+   * @param event
+   */
+  const onMessage = (event: WebViewMessageEvent) => {
+    const value = String(event.nativeEvent.data);
+    setTextString(value);
+  };
+
+  /**
+   * Function send post message original JS
+   */
+  const INJECTED_JAVASCRIPT = `(function() {
+    window.postMessage("${textString}", "*");
+  })();`;
+
+  /**
+   * Function receive post message in parent HTML and send post message
+   */
+  const INJECTED_JAVASCRIPT_RECEIVE = `(function() {
+    window.addEventListener('message', event => {
+      window.ReactNativeWebView.postMessage(event.data);
+    }, true);
+  })();`;
+
+  const onPress = () => {
+    webViewRef.current?.injectJavaScript(INJECTED_JAVASCRIPT);
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <SafeAreaView>
+      <Text style={styles.title}>Integration Webview</Text>
+      <View style={styles.webViewContainer}>
+        <WebView
+          scrollEnabled={false}
+          ref={webViewRef}
+          javaScriptEnabled
+          source={require('./assets/parent-index.html')}
+          onMessage={onMessage}
+          injectedJavaScriptBeforeContentLoaded={INJECTED_JAVASCRIPT_RECEIVE}
+        />
+      </View>
+      <View style={styles.nativeContainer}>
+        <Text style={styles.textNative}>
+          Enter the text to send post message
+        </Text>
+        <TextInput
+          style={styles.input}
+          value={textString}
+          onChangeText={setTextString}
+        />
+      </View>
+      <Button color={'red'} title="SUBMIT" onPress={onPress} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  title: {
+    fontSize: 20,
+    textAlign: 'center',
+    marginTop: 20,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  webViewContainer: {
+    width: DIMENSION.width,
+    height: DIMENSION.height,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  nativeContainer: {
+    gap: 10,
   },
-  highlight: {
-    fontWeight: '700',
+  textNative: {
+    textAlign: 'center',
+  },
+  input: {
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1,
+    width: DIMENSION.width - 60,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
   },
 });
 
