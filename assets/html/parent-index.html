@@ -5,7 +5,9 @@
       window.onmessage = function (e) {
         const iframeWin = document.getElementById('da-iframe').contentWindow;
         if (e.source === iframeWin) return;
-        iframeWin.postMessage(event.data, '*');
+        if (e.data.action === 'msg') {
+          iframeWin.postMessage(e.data.data, '*');
+        }
       };
     </script>
   </head>
@@ -15,7 +17,7 @@
       <h2>Parent page 1</h2>
       <iframe
         id="da-iframe"
-        src="https://unitedv7.relationshop.net/"
+        src="http://127.0.0.1:5500/assets/html/child-index.html"
         title="iframe Example 1"
         allowfullscreen
         width="100%"

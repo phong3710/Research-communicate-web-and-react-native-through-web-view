@@ -12,7 +12,7 @@ function App(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <WebViewNative
-        source={require('./assets/html/parent-index-1.html')}
+        source={require('./assets/html/parent-index.html')}
         width={width}
         height={height}
       />

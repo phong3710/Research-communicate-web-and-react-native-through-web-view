@@ -9,19 +9,18 @@ import {
   StyleSheet,
   DimensionValue,
 } from 'react-native';
-import WebView, {WebViewMessageEvent} from 'react-native-webview';
-import {WebViewSource} from 'react-native-webview/lib/WebViewTypes';
+import WebView, {WebViewMessageEvent, WebViewProps} from 'react-native-webview';
 
-type Props = {
-  source: WebViewSource;
+interface Props extends WebViewProps {
   width?: DimensionValue;
   height?: DimensionValue;
-};
+}
 
 export const WebViewNative = ({
   source,
   width = '100%',
   height = 200,
+  ...rest
 }: Props) => {
   const webViewRef = useRef<WebView>(null);
   const [textString, setTextString] = useState('');
@@ -39,7 +38,14 @@ export const WebViewNative = ({
    * Function send post message original JS
    */
   const INJECTED_JAVASCRIPT = `(function() {
-    window.postMessage("${textString}", "*");
+    
+    window.postMessage(
+      {
+        action: 'msg',
+        data: "${textString}"
+      },
+      '*',
+    );
   })();`;
 
   /**
@@ -63,12 +69,12 @@ export const WebViewNative = ({
       <Text style={styles.title}>Integration Webview</Text>
       <View style={{width, height}}>
         <WebView
-          scrollEnabled={false}
           ref={webViewRef}
           javaScriptEnabled
           source={source}
           onMessage={onMessage}
           injectedJavaScriptBeforeContentLoaded={INJECTED_JAVASCRIPT_RECEIVE}
+          {...rest}
         />
       </View>
       <View style={styles.nativeContainer}>
